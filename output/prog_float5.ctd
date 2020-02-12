@@ -1,0 +1,6 @@
+	t1 = (float) x;
+	t2 = (float) y;
+	t0 = t1 /r t2;
+	t3 = (int) t0;
+	t4 = x;
+	print t4;

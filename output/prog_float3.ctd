@@ -1,0 +1,9 @@
+	ix = 2;
+	iy = 3;
+	fx = ix;
+	fy = iy;
+	t0 = iy / ix;
+	t1 = fx /r  fy;
+	t3 = (float) t0;
+	t2 = t3 +r  t1;
+	print t2;

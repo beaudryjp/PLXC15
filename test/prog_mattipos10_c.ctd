@@ -1,0 +1,75 @@
+   $x_length = 3;
+   $y_length = 3;
+# Comprobacion de rango
+   if (0 < 0) goto L0;
+   if (3 < 0) goto L0;
+   if (3 == 0) goto L0;
+   goto L1;
+L0:
+   error;
+   halt;
+L1:
+   $t0 = (float) 1;
+   x[0] = $t0;
+# Comprobacion de rango
+   if (1 < 0) goto L2;
+   if (3 < 1) goto L2;
+   if (3 == 1) goto L2;
+   goto L3;
+L2:
+   error;
+   halt;
+L3:
+   $t1 = (float) 2;
+   x[1] = $t1;
+# Comprobacion de rango
+   if (2 < 0) goto L4;
+   if (3 < 2) goto L4;
+   if (3 == 2) goto L4;
+   goto L5;
+L4:
+   error;
+   halt;
+L5:
+   $t2 = (float) 3;
+   x[2] = $t2;
+   $t3 = x[0];
+   y[0] = $t3;
+   $t3 = x[1];
+   y[1] = $t3;
+   $t3 = x[2];
+   y[2] = $t3;
+   y = x;
+# Comprobacion de rango
+   if (0 < 0) goto L6;
+   if (3 < 0) goto L6;
+   if (3 == 0) goto L6;
+   goto L7;
+L6:
+   error;
+   halt;
+L7:
+   $t4 = y[0];
+# Comprobacion de rango
+   if (1 < 0) goto L8;
+   if (3 < 1) goto L8;
+   if (3 == 1) goto L8;
+   goto L9;
+L8:
+   error;
+   halt;
+L9:
+   $t5 = y[1];
+   $t6 = $t4 +r $t5;
+# Comprobacion de rango
+   if (2 < 0) goto L10;
+   if (3 < 2) goto L10;
+   if (3 == 2) goto L10;
+   goto L11;
+L10:
+   error;
+   halt;
+L11:
+   $t7 = y[2];
+   $t8 = $t6 +r $t7;
+   print $t8;

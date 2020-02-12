@@ -1,0 +1,13 @@
+	a_length = 3;
+	b_length = 5;
+	t0[0] = 1;
+	t0[1] = 2;
+	t0[2] = 3;
+java.lang.NumberFormatException: For input string: ""
+	at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.base/java.lang.Integer.parseInt(Integer.java:662)
+	at java.base/java.lang.Integer.parseInt(Integer.java:770)
+	at CUP$parser$actions.CUP$parser$do_action(parser.java:1506)
+	at parser.do_action(parser.java:632)
+	at java_cup.runtime.lr_parser.parse(lr_parser.java:584)
+	at PLXC.main(PLXC.java:19)

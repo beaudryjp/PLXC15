@@ -1,0 +1,3 @@
+	# ERROR: Variable 'x' is of type INT, not FLOAT.
+	error;
+	halt;

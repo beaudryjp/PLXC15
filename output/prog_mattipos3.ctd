@@ -1,0 +1,75 @@
+	x_length = 10;
+# Range check
+	if (1 < 0) goto L0;
+	if (10 < 1) goto L0;
+	if (10 == 1) goto L0;
+	goto L1;
+L0:
+	# ERROR: Incorrect access to position x[1].
+	error;
+	halt;
+L1:
+	x[1] = 1.1;
+# Range check
+	if (2 < 0) goto L2;
+	if (10 < 2) goto L2;
+	if (10 == 2) goto L2;
+	goto L3;
+L2:
+	# ERROR: Incorrect access to position x[2].
+	error;
+	halt;
+L3:
+	t0 = 1 + 1;
+	t1 = t0;
+	t2 = (float) t1;
+	x[2] = t2;
+# Range check
+	if (3 < 0) goto L4;
+	if (10 < 3) goto L4;
+	if (10 == 3) goto L4;
+	goto L5;
+L4:
+	# ERROR: Incorrect access to position x[3].
+	error;
+	halt;
+L5:
+	x[3] = 3.3;
+# Range check
+	if (1 < 0) goto L6;
+	if (10 < 1) goto L6;
+	if (10 == 1) goto L6;
+	goto L7;
+L6:
+	# ERROR: Incorrect access to position x[1].
+	error;
+	halt;
+L7:
+# Range check
+	if (2 < 0) goto L8;
+	if (10 < 2) goto L8;
+	if (10 == 2) goto L8;
+	goto L9;
+L8:
+	# ERROR: Incorrect access to position x[2].
+	error;
+	halt;
+L9:
+	t4 = x[1];
+	t5 = x[2];
+	t3 = t4 +r t5;
+# Range check
+	if (3 < 0) goto L10;
+	if (10 < 3) goto L10;
+	if (10 == 3) goto L10;
+	goto L11;
+L10:
+	# ERROR: Incorrect access to position x[3].
+	error;
+	halt;
+L11:
+	t7 = x[3];
+	t6 = t3 +r t7;
+	z = t6;
+	t8 = z;
+	print t8;

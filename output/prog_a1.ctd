@@ -1,0 +1,51 @@
+	x_length = 3;
+	pi = 3.1416;
+	t0[0] = 1.0;
+	t1 = 1.1 +r 2.2;
+	t0[1] = t1;
+	t2 = 2.0 *r pi;
+	t0[2] = t2;
+	t3 = t0[0];
+	x[0] = t3;
+	t3 = t0[1];
+	x[1] = t3;
+	t3 = t0[2];
+	x[2] = t3;
+	x = t0;
+# Range check
+	if (0 < 0) goto L0;
+	if (3 < 0) goto L0;
+	if (3 == 0) goto L0;
+	goto L1;
+L0:
+	# ERROR: Incorrect access to position x[0].
+	error;
+	halt;
+L1:
+# Range check
+	if (1 < 0) goto L2;
+	if (3 < 1) goto L2;
+	if (3 == 1) goto L2;
+	goto L3;
+L2:
+	# ERROR: Incorrect access to position x[1].
+	error;
+	halt;
+L3:
+	t5 = x[0];
+	t6 = x[1];
+	t4 = t5 +r t6;
+# Range check
+	if (2 < 0) goto L4;
+	if (3 < 2) goto L4;
+	if (3 == 2) goto L4;
+	goto L5;
+L4:
+	# ERROR: Incorrect access to position x[2].
+	error;
+	halt;
+L5:
+	t8 = x[2];
+	t7 = t4 +r t8;
+	t9 = t7;
+	print t9;

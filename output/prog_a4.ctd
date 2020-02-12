@@ -1,0 +1,4 @@
+	p = 10;
+	# ERROR: The size of the array is not defined.
+	error;
+	halt;

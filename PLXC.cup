@@ -1,0 +1,536 @@
+import java_cup.runtime.*;
+
+/*
+We use the Tag class for:
+    - Conditionals to control the true/false condition
+    - To have a Tuple style object in which we can use it to save:
+        - the name of the variable (saved in Tag.t)
+        - the type of the variable (saved in Tag.f)
+*/
+
+/* Custom error message */
+/*
+parser code {:
+  @Override
+  public void report_error(String message, Object info) {
+      Generator.comment("Error");
+      SymbolTable.showTable();
+      Generator.error("Message: " + message + "\n\tInfo: " + info, true);
+  }
+:}
+*/
+
+/* Terminals */
+terminal                OP, CP, OB, CB, OSB, CSB, SEMICOLON, COMMA;
+terminal                PLUS, MINUS, MUL, DIV, UMINUS, MOD;
+terminal                ASIG, INC, DEC;
+terminal                AND, OR, NOT;
+terminal                LT, GT, LTOREQ, GTOREQ, EQ, NOTEQ;
+terminal                IF, ELSE, WHILE, DO, PRINT;
+terminal                VAR_INT, VAR_FLOAT;
+terminal        String  VAR, INT, FLOAT, CAST_INT, CAST_FLOAT;
+terminal        String  FOR, TO, STEP, DOWNTO, IN;
+
+/* Non terminals */
+non terminal            listSentence;
+non terminal            sentence;
+non terminal            elseCond;
+non terminal            ifSentence;
+non terminal            whileSentence;
+non terminal            doWhileSentence;
+non terminal            forSentence;
+non terminal            forToSentence;
+non terminal            forInSentence;
+non terminal            forDownToSentence;
+non terminal            printSentence;
+non terminal            block;
+non terminal    String  ifPART;
+non terminal    String  whilePART;
+non terminal    String  doPART;
+non terminal    String  forPART;
+non terminal    String  stepPart;
+non terminal    String  toPart;
+non terminal    String  downToPart;
+non terminal    String  type;
+non terminal    String  typeCast;
+non terminal    String  varDeclaration;
+non terminal    String  valueDeclaration;
+non terminal    String  variable;
+non terminal    Tag     expression;
+non terminal    Tag     condition;
+non terminal    Tag     operator;
+non terminal    Tag     cast;
+non terminal    Tag     number;
+non terminal    Tag     assignedValue;
+non terminal    Tag     initArray;
+
+/* Precedences */
+/* https://ee.hawaii.edu/~tep/EE160/Book/chap5/_28291_table577.gif */
+precedence  left        COMMA;
+precedence  right       ASIG;
+precedence  left        OR;
+precedence  left        AND;
+precedence  left        EQ, NOTEQ, LT, LTOREQ, GT, GTOREQ;
+precedence  left        PLUS, MINUS;
+precedence  left        MUL, DIV, MOD;
+precedence  left        UMINUS;
+precedence  right       NOT, INC, DEC;
+precedence  nonassoc    IF, ELSE;
+precedence  nonassoc    VAR_INT, VAR_FLOAT, VAR;
+precedence  nonassoc    CAST_INT, CAST_FLOAT;
+precedence  nonassoc    OB, CB;
+
+/* Grammar */
+start with listSentence;
+
+/* Main program */
+listSentence        ::= sentence
+                    |   listSentence sentence
+;
+
+/* Sentences such as:
+    - variable declaration
+    - expressions
+    - print
+    - block
+    - if, if-else
+    - while, do-while
+    - for, for-to, for-downto, for-in
+*/
+sentence            ::= varDeclaration SEMICOLON
+                    |   expression SEMICOLON
+                    |   ifSentence
+                    |   whileSentence
+                    |   doWhileSentence
+                    |   forSentence
+                    |   forToSentence
+                    |   forDownToSentence
+                    |   forInSentence
+                    |   printSentence
+                    |   block                         
+;
+
+/* Conditionals & loops */
+/* IF, IF-ELSE Sentence */
+ifSentence          ::= ifPART:tag OP condition:c                   {:  Generator.label(c.getT()); :}  
+                        CP sentence                                 {:  Generator.gotoLabel(tag);  
+                                                                        Generator.label(c.getF()); 
+                                                                    :}  
+                        elseCond                                    {:  Generator.label(tag); :}
+;
+
+/* While loop */
+whileSentence       ::= whilePART:tag                               {:  Generator.label(tag); :}   
+                        OP condition:c                              {:  Generator.label(c.getT()); :}            
+                        CP sentence                                 {:  Generator.gotoLabel(tag);  
+                                                                        Generator.label(c.getF()); 
+                                                                    :}
+;
+
+/* Do While loop */
+doWhileSentence     ::= doPART:tag                                  {:  Generator.label(tag); :}                 
+                        sentence WHILE OP condition:c CP SEMICOLON  {:  Generator.label(c.getT());  
+                                                                        Generator.gotoLabel(tag);  
+                                                                        Generator.label(c.getF()); 
+                                                                    :} 
+;
+
+/* For loop */
+forSentence         ::= forPART:tag OP expression:e1 SEMICOLON      {:  Generator.label(tag); :}                 
+                        condition:c SEMICOLON                       {:  RESULT = Generator.newLabel();  
+                                                                        Generator.label(RESULT.toString()); 
+                                                                    :}  
+                        expression:e2 CP                            {:  Generator.gotoLabel(tag);  
+                                                                        Generator.label(c.getT()); 
+                                                                    :}           
+                        sentence                                    {:  Generator.gotoLabel(RESULT.toString());  
+                                                                        Generator.label(c.getF()); 
+                                                                    :}
+;
+
+/* For To loop */
+forToSentence       ::= forPART:tag expression:e1 toPart:to expression:e2       {:  Generator.label(tag);
+                                                                                    RESULT = Generator.condition(Generator.LTOREQ, e1, e2);
+                                                                                    Generator.label(to);
+                                                                                :}
+                        stepPart:step DO                                        {:  Generator.increment(Generator.INCL, e1.getT(), step); //we use this increment since we need e1 = e1 + step
+                                                                                    Generator.gotoLabel(tag);
+                                                                                    Generator.label( ((Tag) RESULT).getT() );
+                                                                                :} 
+                        sentence                                                {:  
+                                                                                    Generator.gotoLabel(to);
+                                                                                    Generator.label( ((Tag) RESULT).getF() );
+                                                                                :}
+;
+
+/* For In loop */
+forInSentence       ::= forPART:tag operator:e IN assignedValue:array           {:  if(e.getF().contains(Type.INT) && array.getF().contains(Type.FLOAT)){
+                                                                                        Generator.error("# ERROR: Variable '" + e.getT() + "' is of type INT, not FLOAT.", true);
+                                                                                    }
+                                                                                    else if(e.getF().contains(Type.FLOAT) && array.getF().contains(Type.INT)){
+                                                                                        Generator.error("# ERROR: Variable '" + e.getT() + "' is of type FLOAT, not INT.", true);
+                                                                                    }/*
+                                                                                    else if(!array.getF().contains(Type.ARRAY)){
+                                                                                        Generator.error("# ERROR: Variable '" + array.getT() + "' is not an ARRAY.", true);
+                                                                                    }
+                                                                                    */
+                                                                                    RESULT = Generator.forInLoop(e, array);
+                                                                                :}
+                        DO sentence                                             {:  Generator.gotoLabel( ((Tag) RESULT).getT() );
+                                                                                    Generator.label( ((Tag) RESULT).getF() );
+                                                                                :}
+;
+
+/* For Down-To loop */
+forDownToSentence   ::= forPART:tag expression:e1 downToPart:to expression:e2   {:  Generator.label(tag);
+                                                                                    RESULT = Generator.condition(Generator.GTOREQ, e1, e2);
+                                                                                    Generator.label(to);
+                                                                                :}
+                        stepPart:step DO                                        {:  Generator.increment(Generator.DECL, e1.getT(), step); //we use this increment since we need e1 = e1 - step
+                                                                                    Generator.gotoLabel(tag);
+                                                                                    Generator.label( ((Tag) RESULT).getT() );
+                                                                                :} 
+                        sentence                                                {:  
+                                                                                    Generator.gotoLabel(to);
+                                                                                    Generator.label( ((Tag) RESULT).getF() );
+                                                                                :}
+;
+
+/* Print expression */
+printSentence       ::= PRINT OP expression:e CP SEMICOLON          {:  Generator.print(e); :}
+;
+
+/* Block area of a conditional or loop */
+block               ::= OB                                          {:  SymbolTable.startBlock(); :} 
+                        listSentence                                {:  SymbolTable.endBlock(); :} 
+                        CB  
+                    |   OB CB 
+;
+
+/* All expressions go here such as:
+    - plus, minus, mul, div, mod, unary minus
+    - increments, decrements
+    - variable assignments
+    - casting
+ */
+expression          ::= expression:e1 PLUS expression:e2            {:  RESULT = Generator.arithmetic(Generator.PLUS, "+", e1, e2); :}
+                    |   expression:e1 MINUS expression:e2           {:  RESULT = Generator.arithmetic(Generator.MINUS, "-", e1, e2); :}
+                    |   expression:e1 MUL expression:e2             {:  RESULT = Generator.arithmetic(Generator.MUL, "*", e1, e2); :}
+                    |   expression:e1 DIV expression:e2             {:  RESULT = Generator.arithmetic(Generator.DIV, "/", e1, e2); :}
+                    |   expression:e1 MOD expression:e2             {:  RESULT = Generator.arithmetic(Generator.MOD, "", e1, e2); :}
+                    |   MINUS expression:e                          {:  RESULT = Generator.arithmetic(Generator.MIN, "", e, null); :} %prec UMINUS
+                    |   variable:v INC                              {:  if(!SymbolTable.find(v))
+                                                                            Generator.varNotDeclared(v); 
+                                                                        RESULT = Generator.increment(Generator.INCR, v, Generator.ONE);
+                                                                    :}
+                    |   INC variable:v                              {:  if(!SymbolTable.find(v))
+                                                                            Generator.varNotDeclared(v); 
+                                                                        RESULT = Generator.increment(Generator.INCL, v, Generator.ONE);
+                                                                    :}
+                    |   variable:v DEC                              {:  if(!SymbolTable.find(v))
+                                                                            Generator.varNotDeclared(v);   
+                                                                        RESULT = Generator.increment(Generator.DECR, v, Generator.ONE);
+                                                                    :}
+                    |   DEC variable:v                              {:  if(!SymbolTable.find(v))
+                                                                            Generator.varNotDeclared(v); 
+                                                                        RESULT = Generator.increment(Generator.DECL, v, Generator.ONE);
+                                                                    :}
+                    
+                    |   variable:v                                  {:  String varName = v;
+                                                                        if(v.contains("["))
+                                                                            varName = v.substring(0, v.indexOf("["));
+                                                                        if(!SymbolTable.find(varName))
+                                                                            Generator.varNotDeclared(varName); 
+                                                                        
+                                                                    :} 
+                        ASIG assignedValue:e                        {:  String varName = v;
+                                                                        if(v.contains("["))
+                                                                            varName = v.substring(0, v.indexOf("["));
+                                                                        /* First type check */
+                                                                        if(SymbolTable.get(varName).contains(Type.INT) && e.getF().contains(Type.FLOAT)){
+                                                                            Generator.error("# ERROR: Variable '" + v + "' is of type INT, not FLOAT.", true);
+                                                                        }
+                                                                        /* Array initialization */
+                                                                        if (e.getT().equals(Generator.getArrTemp())){
+                                                                            int maxSize = SymbolTable.sizeArray(varName);
+                                                                            String replacement = e.getF();
+                                                                            int k = 0;
+                                                                            while(replacement.charAt(k) < 60)
+                                                                                k++;
+                                                                            replacement = e.getF().substring(0, k);
+                                                                            int size = Integer.parseInt(replacement);
+                                                                            if(size >= maxSize){
+                                                                                Generator.error("# ERROR: Size mismatch on array " + varName + ".", true);
+                                                                            }
+                                                                            String array = e.getT();
+                                                                            String temp = Generator.newTempVar();
+                                                                            for(int i = 0; i <= size; i++){
+                                                                                Generator.assignment(temp, array + Generator.arrIndex(Integer.toString(i)));
+                                                                                Generator.assignment(varName + Generator.arrIndex(Integer.toString(i)), temp);
+                                                                            }
+                                                                            Generator.assignment(varName, array);
+                                                                            Generator.resetArray();
+                                                                            RESULT = new Tag(varName, SymbolTable.get(varName));
+                                                                        }
+                                                                        else{ /* Other types */
+                                                                            /* Type of the variable */
+                                                                            String typeA = "";
+                                                                            if(v.contains("["))
+                                                                                typeA = SymbolTable.get(v.substring(0, v.indexOf("[")));
+                                                                            else
+                                                                                typeA = SymbolTable.get(v);
+                                                                            
+                                                                            /* Type of the expression */
+                                                                            String typeB = e.getF();
+                                                                            /* Assign an array[position] to another array */
+                                                                            if(!v.contains("[") && !e.getT().contains("[") && typeA.contains(Type.ARRAY) && typeB.contains(Type.ARRAY)){
+                                                                                int open = typeA.indexOf("[");
+                                                                                int close = typeA.indexOf("]");
+                                                                                int sizeA = Integer.parseInt(typeA.substring(open + 1, close));
+                                                                                open = typeB.indexOf("[");
+                                                                                close = typeB.indexOf("]");
+                                                                                int sizeB = Integer.parseInt(typeB.substring(open + 1, close));
+                                                                                if(sizeA < sizeB){
+                                                                                    Generator.error("# ERROR: Size of array '" + v + "' is less than the size of the array." + e.getT() + ".", true);
+                                                                                }
+                                                                                String temp = Generator.newTempVar();
+                                                                                for(int k = 0; k < sizeB; k++){
+                                                                                    Generator.assignment(temp, e.getT() + Generator.arrIndex(Integer.toString(k)));
+                                                                                    Generator.assignment(v + Generator.arrIndex(Integer.toString(k)), temp);
+                                                                                }
+                                                                                Generator.assignment(v, e.getT());
+                                                                                RESULT = new Tag(v, typeA);
+                                                                            }
+                                                                            else{
+                                                                                Generator.initTypes(v, e, typeA, typeB);
+                                                                                RESULT = new Tag(v, typeA);
+                                                                            }
+                                                                            
+                                                                        }
+                                                                    :}
+                    |   OP expression:e CP                          {:  RESULT = e; :}
+                    |   operator:n                                  {:  RESULT = n; :}
+                    |   typeCast:t cast:c                           {:  if(c.getF() != "checked"){
+                                                                            RESULT = Generator.cast(Generator.MIN, t, c, null, " ");
+                                                                        }
+                                                                        else {
+                                                                            RESULT = c;
+                                                                        }
+                                                                        RESULT.setF(t);  
+                                                                    :}   
+
+;
+
+/* Logical conditions go here such as: 
+    - ==, !=, <, <=, >, >=
+    - !, &&, ||
+*/
+condition           ::= expression:e1 EQ expression:e2              {:  RESULT = Generator.condition(Generator.EQ, e1, e2); :}
+                    |   expression:e1 NOTEQ expression:e2           {:  RESULT = Generator.condition(Generator.NOTEQ, e1, e2); :}
+                    |   expression:e1 LT expression:e2              {:  RESULT = Generator.condition(Generator.LT, e1, e2); :}
+                    |   expression:e1 LTOREQ expression:e2          {:  RESULT = Generator.condition(Generator.LTOREQ, e1, e2); :}
+                    |   expression:e1 GT expression:e2              {:  RESULT = Generator.condition(Generator.GT, e1, e2); :}
+                    |   expression:e1 GTOREQ expression:e2          {:  RESULT = Generator.condition(Generator.GTOREQ, e1, e2); :}
+                    |   NOT condition:c1                            {:  RESULT = Generator.operator(Generator.NOT, c1, null); :}
+                    |   condition:c1 AND                            {:  Generator.label(c1.getT()); :} 
+                        condition:c2                                {:  RESULT = Generator.operator(Generator.AND, c1, c2); :}
+
+                    |   condition:c1 OR                             {:  Generator.label(c1.getF()); :} 
+                        condition:c2                                {:  RESULT = Generator.operator(Generator.OR, c1, c2); :}
+
+                    |   OP condition:c CP                           {:  RESULT = c; :}
+;
+
+/* Extra non terminals used for the conditionals or loops */
+ifPART              ::= IF                                          {:  RESULT = Generator.newLabel(); :}
+;
+
+whilePART           ::= WHILE                                       {:  RESULT = Generator.newLabel(); :}
+;
+
+doPART              ::= DO                                          {:  RESULT = Generator.newLabel(); :}
+;
+
+forPART             ::= FOR                                         {:  RESULT = Generator.newLabel(); :}
+;
+
+toPart              ::= TO                                          {:  RESULT = Generator.newLabel(); :}
+;
+
+downToPart          ::= DOWNTO                                      {:  RESULT = Generator.newLabel(); :}
+;
+
+stepPart            ::= STEP expression:e                           {:  RESULT = e.getT(); :}
+                    |                                               {:  RESULT = "1"; :}
+;
+
+elseCond            ::= ELSE sentence
+                    |
+;
+
+/* Variable declaration */
+variable            ::= VAR:v                                       {:  String tmp = SymbolTable.varBlock(v);
+                                                                        if(SymbolTable.find(v)){
+                                                                            if(SymbolTable.findInCurrentBlock(tmp)){ 
+                                                                                RESULT = tmp; 
+                                                                            }
+                                                                            else {
+                                                                                int blk = SymbolTable.inWhichBlock(v); 
+                                                                                if(blk > 0){ 
+                                                                                    RESULT = v + "_" + blk; 
+                                                                                }
+                                                                                else { 
+                                                                                    RESULT = v; 
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        else { 
+                                                                            RESULT = v; 
+                                                                        } 
+                                                                    :}
+                    |   VAR:v OSB expression:e CSB                  {:  String tmp = SymbolTable.varBlock(v);
+                                                                        if(SymbolTable.find(v)){
+                                                                            if(SymbolTable.findInCurrentBlock(tmp)){ 
+                                                                                RESULT = tmp; 
+                                                                            }
+                                                                            else {
+                                                                                int blk = SymbolTable.inWhichBlock(v); 
+                                                                                if(blk > 0){ 
+                                                                                    RESULT = v + "_" + blk; 
+                                                                                }
+                                                                                else { 
+                                                                                    RESULT = v; 
+                                                                                }
+                                                                            }
+                                                                            RESULT = RESULT + Generator.rangeCheck(v, e);
+                                                                        }
+                                                                        else { 
+                                                                            RESULT = v; 
+                                                                        } 
+                                                                    :}
+;
+
+varDeclaration      ::= type:type                                   {:  RESULT = type; :} 
+                        VAR:v                                       {:  if(SymbolTable.findInCurrentBlock(v))
+                                                                            Generator.varDeclared(v);   
+                                                                    :}
+                        valueDeclaration:val                        {:  String tmp = SymbolTable.varBlock(v); //variable_blockIndex
+                                                                        String varName = "";
+                                                                        /* If val is not an array */
+                                                                        if(val != null && !val.contains("[")){
+                                                                            if(SymbolTable.find(v) && SymbolTable.getIndex() > 0)
+                                                                                Generator.assignment(tmp, val);
+                                                                            else
+                                                                                Generator.assignment(v, val); 
+                                                                        }
+                                                                        /* If val is an array */
+                                                                        if(val != null && val.contains("[")){
+                                                                            type = Type.ARRAY + val + "(" + type + ")";
+                                                                            RESULT = type;
+                                                                            Generator.arrLength(v, val);
+                                                                        }
+
+                                                                        if(SymbolTable.find(v) && SymbolTable.getIndex() > 0){
+                                                                            SymbolTable.put(tmp, type);
+                                                                            varName = tmp;
+                                                                        }
+                                                                        else{
+                                                                            SymbolTable.put(v, type); 
+                                                                            varName = v;
+                                                                        }
+                                                                        /* it's an array initialization */
+                                                                        if(!Generator.getArrTemp().isEmpty()){
+                                                                            int maxSize = SymbolTable.sizeArray(varName);
+                                                                            int size = Integer.parseInt(Generator.getArrPosition());
+                                                                            if(size >= maxSize){
+                                                                                Generator.error("# ERROR: Size mismatch on array " + varName + ".", true);
+                                                                            }
+                                                                            String array = Generator.getArrTemp();
+                                                                            String temp = Generator.newTempVar();
+                                                                            for(int k = 0; k <= size; k++){
+                                                                                Generator.assignment(temp, array + Generator.arrIndex(Integer.toString(k)));
+                                                                                Generator.assignment(varName + Generator.arrIndex(Integer.toString(k)), temp);
+                                                                            }
+                                                                            Generator.resetArray();
+                                                                        }
+                                                                            
+                                                                    :}
+                    |   varDeclaration:t COMMA valueDeclaration:v   {:  if(SymbolTable.findInCurrentBlock(v)){
+                                                                            Generator.varDeclared(v);
+                                                                        }
+                                                                        else{
+                                                                            if(SymbolTable.find(v) && SymbolTable.getIndex() > 0)
+                                                                                SymbolTable.put(SymbolTable.varBlock(v), t);
+                                                                            else
+                                                                                SymbolTable.put(v, t);
+                                                                        }
+                                                                    :}
+;
+
+/* Value assignment to a variable */
+valueDeclaration    ::= ASIG expression:e                           {:  RESULT = e.getT(); :}
+                    |   variable:v ASIG expression:e                {:  RESULT = v; 
+                                                                        Generator.assignment(v, e.getT()); 
+                                                                    :}
+                    |   variable:v                                  {:  RESULT = v; :}
+                    |   OSB expression:n CSB                        {:  if(SymbolTable.find(n.getT())){
+                                                                            Generator.error("# ERROR: The size of the array is not defined.", true);
+                                                                        }
+                                                                        RESULT = Generator.arrIndex(n.getT());
+                                                                    :}
+                    |   OSB expression:n CSB ASIG initArray:i       {:  if(SymbolTable.find(n.getT())){
+                                                                            Generator.error("# ERROR: The size of the array is not defined.", true);
+                                                                        }
+                                                                        RESULT = Generator.arrIndex(n.getT());
+                                                                    :}
+                    |                                               {:  RESULT = null; :}
+;
+
+/* Array initialization */
+initArray           ::= OB expression:e                             {:  Generator.initArrTemp(Generator.newTempVar());
+                                                                        Generator.assignment(Generator.nextArrPosition(), e.getT());
+                                                                    :}
+                        initArray:i                                 {:  RESULT = i;
+                                                                        //RESULT.setF(Type.ARRAY + Generator.getArrPosition() + "(" + e.getF() + ")");
+                                                                        RESULT.setF(Generator.getArrPosition() + e.getF());
+                                                                    :}
+                        CB
+                    |   COMMA expression:e                          {:  Generator.assignment(Generator.nextArrPosition(), e.getT());
+                                                                    :}
+                        initArray:i                                 {:  RESULT = i; :}
+                    |                                               {:  RESULT = new Tag(Generator.getArrTemp(), Generator.getArrPosition()); :}
+;
+
+assignedValue       ::= expression:e                                {:  RESULT = e; :}
+                    |   initArray:i                                 {:  RESULT = i; :}
+;
+
+/* Type definitions */
+type                ::= VAR_INT                                     {:  RESULT = Type.INT; :}
+                    |   VAR_FLOAT                                   {:  RESULT = Type.FLOAT; :}
+;
+
+/* Casting Type definitions */
+typeCast            ::= CAST_INT                                    {:  RESULT = Type.INT; :}
+                    |   CAST_FLOAT                                  {:  RESULT = Type.FLOAT; :}
+;
+
+/* Casting */
+cast                ::= expression:e1                               {:  RESULT = e1; :}
+                    |   operator:e1 MUL operator:e2                 {:  RESULT = Generator.cast(Generator.MUL, Type.FLOAT, e1, e2, "*"); :}
+                    |   operator:e1 DIV operator:e2                 {:  RESULT = Generator.cast(Generator.DIV, Type.FLOAT, e1, e2, "/"); :}        
+;
+
+operator            ::= variable:v                                  {:  String tmp = v;
+                                                                        if(v.contains("[")) 
+                                                                            tmp = v.substring(0, v.indexOf("["));
+                                                                        if(!SymbolTable.find(tmp)){
+                                                                            Generator.varNotDeclared(v); 
+                                                                        }
+                                                                        else {
+                                                                            RESULT = new Tag(v, SymbolTable.get(tmp));
+                                                                        } 
+                                                                    :}
+                    |  INT:n                                        {:  RESULT = new Tag(n, Type.INT); :}
+                    |  FLOAT:n                                      {:  RESULT = new Tag(n, Type.FLOAT); :}
+;

@@ -1,0 +1,79 @@
+	x_length = 3;
+	y_length = 3;
+# Range check
+	if (0 < 0) goto L0;
+	if (3 < 0) goto L0;
+	if (3 == 0) goto L0;
+	goto L1;
+L0:
+	# ERROR: Incorrect access to position x[0].
+	error;
+	halt;
+L1:
+	x[0] = 1;
+# Range check
+	if (1 < 0) goto L2;
+	if (3 < 1) goto L2;
+	if (3 == 1) goto L2;
+	goto L3;
+L2:
+	# ERROR: Incorrect access to position x[1].
+	error;
+	halt;
+L3:
+	x[1] = 2;
+# Range check
+	if (2 < 0) goto L4;
+	if (3 < 2) goto L4;
+	if (3 == 2) goto L4;
+	goto L5;
+L4:
+	# ERROR: Incorrect access to position x[2].
+	error;
+	halt;
+L5:
+	x[2] = 3;
+	t0 = x[0];
+	y[0] = t0;
+	t0 = x[1];
+	y[1] = t0;
+	t0 = x[2];
+	y[2] = t0;
+	y = x;
+# Range check
+	if (0 < 0) goto L6;
+	if (3 < 0) goto L6;
+	if (3 == 0) goto L6;
+	goto L7;
+L6:
+	# ERROR: Incorrect access to position y[0].
+	error;
+	halt;
+L7:
+# Range check
+	if (1 < 0) goto L8;
+	if (3 < 1) goto L8;
+	if (3 == 1) goto L8;
+	goto L9;
+L8:
+	# ERROR: Incorrect access to position y[1].
+	error;
+	halt;
+L9:
+	t2 = y[0];
+	t3 = y[1];
+	t1 = t2 +r t3;
+# Range check
+	if (2 < 0) goto L10;
+	if (3 < 2) goto L10;
+	if (3 == 2) goto L10;
+	goto L11;
+L10:
+	# ERROR: Incorrect access to position y[2].
+	error;
+	halt;
+L11:
+	t5 = y[2];
+	t4 = t1 +r t5;
+	t6 = t4;
+	print t6;

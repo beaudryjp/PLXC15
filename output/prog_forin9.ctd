@@ -1,0 +1,11 @@
+	a_length = 3;
+# Range check
+	if (0 < 0) goto L0;
+	if (3 < 0) goto L0;
+	if (3 == 0) goto L0;
+	goto L1;
+L0:
+	# ERROR: Incorrect access to position a[0].
+	error;
+	halt;
+L1:

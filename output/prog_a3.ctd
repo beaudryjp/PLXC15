@@ -1,0 +1,51 @@
+	a_length = 10;
+	suma = 0;
+	i = 0;
+L0:
+	if (i < 10) goto L1;
+	goto L2;
+L3:
+	t0 = i + 1;
+	i = t0;
+	goto L0;
+L1:
+# Range check
+	if (i < 0) goto L4;
+	if (10 < i) goto L4;
+	if (10 == i) goto L4;
+	goto L5;
+L4:
+	# ERROR: Position i invalid on array a.
+	error;
+	halt;
+L5:
+	a[i] = i;
+# Range check
+	if (i < 0) goto L6;
+	if (10 < i) goto L6;
+	if (10 == i) goto L6;
+	goto L7;
+L6:
+	# ERROR: Position i invalid on array a.
+	error;
+	halt;
+L7:
+# Range check
+	if (i < 0) goto L8;
+	if (10 < i) goto L8;
+	if (10 == i) goto L8;
+	goto L9;
+L8:
+	# ERROR: Position i invalid on array a.
+	error;
+	halt;
+L9:
+	t2 = a[i];
+	t3 = a[i];
+	t1 = t2 * t3;
+	t4 = suma + t1;
+	suma = t4;
+	goto L3;
+L2:
+	t5 = suma;
+	print t5;

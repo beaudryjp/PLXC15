@@ -1,0 +1,48 @@
+	t0[0] = 1;
+	t0[1] = 2;
+	t0[2] = 3;
+	a_length = 3;
+	t1 = t0[0];
+	a[0] = t1;
+	t1 = t0[1];
+	a[1] = t1;
+	t1 = t0[2];
+	a[2] = t1;
+# Range check
+	if (0 < 0) goto L0;
+	if (3 < 0) goto L0;
+	if (3 == 0) goto L0;
+	goto L1;
+L0:
+	# ERROR: Incorrect access to position a[0].
+	error;
+	halt;
+L1:
+# Range check
+	if (1 < 0) goto L2;
+	if (3 < 1) goto L2;
+	if (3 == 1) goto L2;
+	goto L3;
+L2:
+	# ERROR: Incorrect access to position a[1].
+	error;
+	halt;
+L3:
+# Range check
+	if (2 < 0) goto L4;
+	if (3 < 2) goto L4;
+	if (3 == 2) goto L4;
+	goto L5;
+L4:
+	# ERROR: Incorrect access to position a[2].
+	error;
+	halt;
+L5:
+	t3 = a[1];
+	t4 = a[2];
+	t2 = t3 * t4;
+	t6 = a[0];
+	t7 = t2;
+	t5 = t6 + t7;
+	t8 = t5;
+	print t8;

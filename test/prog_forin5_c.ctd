@@ -1,0 +1,12 @@
+   $a_length = 1;
+   $t0 = -1;
+L0:
+   $t0 = $t0 + 1;
+   if ($t0 < 1) goto L2;
+   goto L3;
+L2:
+   x = a[$t0];
+   print x;
+   goto L0;
+L3:
+L1:

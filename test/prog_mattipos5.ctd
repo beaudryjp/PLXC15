@@ -1,0 +1,7 @@
+   $x_length = 3;
+   $t0[0] = 1.1;
+   $t0[1] = 2.2;
+   $t0[2] = 3.3;
+# ERROR: Error de tipos
+   error;
+   halt;

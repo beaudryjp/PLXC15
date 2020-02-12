@@ -1,0 +1,3 @@
+	# ERROR: Variable 'a' is not an ARRAY.
+	error;
+	halt;

@@ -1,0 +1,3 @@
+# ERROR: Se esta asignando un valor real a una variable entera
+   error;
+   halt;

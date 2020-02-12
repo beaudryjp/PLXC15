@@ -1,0 +1,3 @@
+# ERROR: Se esperaba una matriz en la sentencia for..in
+   error;
+   halt;

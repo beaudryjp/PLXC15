@@ -1,0 +1,13 @@
+	a_length = 1;
+	t0 = -1;
+L1:
+	t0 = t0 + 1;
+	if (t0 < 1) goto L2;
+	goto L3;
+L2:
+	t1 = a[t0];
+	x = t1;
+	t2 = x;
+	print t2;
+	goto L1;
+L3:
